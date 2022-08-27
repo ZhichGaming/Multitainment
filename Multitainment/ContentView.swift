@@ -24,42 +24,34 @@ struct ContentView: View {
     @State private var alertMessage = ""
     
     @State private var questionCountSelection = "5"
-    private let questionCount = ["5", "10", "15", "20"]
+    @State private var questionCount = ["5", "10", "15", "20"]
+    @FocusState var isInputActive: Bool
     
     var body: some View {
         NavigationView {
             List {
-                // Minimum and maximum multiplication tables
-                Section {
-                    Stepper("From \(minimumMultiplication)", value: $minimumMultiplication, in: 1...20)
-                        .onChange(of: minimumMultiplication) { _ in
-                            if minimumMultiplication >= maximumMultiplication { minimumMultiplication -= 1 }
-                        }
-                    Stepper("To \(maximumMultiplication)", value: $maximumMultiplication, in: 1...20)
-                        .onChange(of: maximumMultiplication) { _ in
-                            if minimumMultiplication >= maximumMultiplication { maximumMultiplication += 1 }
-                        }
-                } header: {
-                    Text("Multiplication tables")
-                }
-                // Number of questions per round
-                Section {
-                    Picker("Number of questions", selection: $questionCountSelection) {
-                        ForEach(questionCount, id: \.self) {
-                            Text($0)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                } header: {
-                    Text("Number of questions")
-                }
+                SettingsView(minimumMultiplication: $minimumMultiplication, maximumMultiplication: $maximumMultiplication, questionCountSelection: $questionCountSelection, questionCount: $questionCount)
+                
                 // Questions
                 Section {
                     Text(currentQuestion)
                         .font(.headline)
-                        .frame(alignment: .center)
+                        .onChange(of: currentQuestion) { _ in
+                            print("text: \(currentQuestion)")
+                        }
                     TextField("Enter your answer", value: $answer, format: .number)
-                        .keyboardType(.decimalPad)
+                        .keyboardType(.numberPad)
+                        .focused($isInputActive)
+                        .toolbar {
+                            ToolbarItemGroup(placement: .keyboard) {
+                                Spacer()
+
+                                Button("Done") {
+                                    isInputActive = false
+                                    continueGame()
+                                }
+                            }
+                        }
                 }
             }
             .navigationTitle("Multitainment")
@@ -67,7 +59,6 @@ struct ContentView: View {
             .toolbar {
                 Button("Start", action: startGame)
             }
-            .onSubmit(continueGame)
             .alert(alertTitle, isPresented: $showingAlert) {
                 Button("OK") {}
 
@@ -117,22 +108,26 @@ struct ContentView: View {
             alertTitle = "Game not started"
             alertMessage = "Press the start button at the top right to start the game!"
             showingAlert = true
-        } else {
-            // Checks if answer is correct
-            if isCorrect() {
-                currentQuestionLocation += 1
-                currentQuestion = questions[currentQuestionLocation]
-                
-                // Checks if this is the last question
-                if currentQuestion == questions.last {
-                    showResults()
-                    resetGame()
-                }
-            } else {
-                // If the answer is wrong, add a mistake and exit.
-                mistakes += 1
+            answer = nil
+            return
+        }
+        
+        // Checks if answer is correct
+        if isCorrect() {
+            currentQuestionLocation += 1
+
+            // Checks if this is the last question
+            if currentQuestion == (questions.last) {
+                showResults()
+                resetGame()
                 return
             }
+            currentQuestion = questions[currentQuestionLocation]
+        } else {
+            // If the answer is wrong, add a mistake and exit.
+            mistakes += 1
+            return
+        
         }
         answer = nil
     }
@@ -144,6 +139,41 @@ struct ContentView: View {
         currentQuestion = ""
         currentQuestionLocation = 0
         gameStarted = false
+    }
+}
+
+struct SettingsView: View {
+    @Binding var minimumMultiplication: Int
+    @Binding var maximumMultiplication: Int
+    
+    @Binding var questionCountSelection: String
+    @Binding var questionCount: [String]
+    
+    var body: some View {
+        // Minimum and maximum multiplication tables
+        Section {
+            Stepper("From \(minimumMultiplication)", value: $minimumMultiplication, in: 1...20)
+                .onChange(of: minimumMultiplication) { _ in
+                    if minimumMultiplication >= maximumMultiplication { minimumMultiplication -= 1 }
+                }
+            Stepper("To \(maximumMultiplication)", value: $maximumMultiplication, in: 1...20)
+                .onChange(of: maximumMultiplication) { _ in
+                    if minimumMultiplication >= maximumMultiplication { maximumMultiplication += 1 }
+                }
+        } header: {
+            Text("Multiplication tables")
+        }
+        // Number of questions per round
+        Section {
+            Picker("Number of questions", selection: $questionCountSelection) {
+                ForEach(questionCount, id: \.self) {
+                    Text($0)
+                }
+            }
+            .pickerStyle(.segmented)
+        } header: {
+            Text("Number of questions")
+        }
     }
 }
 
