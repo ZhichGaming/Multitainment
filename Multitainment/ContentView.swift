@@ -67,11 +67,10 @@ struct ContentView: View {
             .toolbar {
                 Button("Start", action: startGame)
             }
-            .onSubmit {
-                continueGame()
-            }
+            .onSubmit(continueGame)
             .alert(alertTitle, isPresented: $showingAlert) {
                 Button("OK") {}
+
             } message: {
                 Text(alertMessage)
             }
@@ -93,7 +92,6 @@ struct ContentView: View {
     }
     
     func showResults() {
-        // TODO: make this
         alertTitle = "You won!"
         alertMessage = "You answered \(questionCountSelection) questions correctly and got \(mistakes) mistakes."
         showingAlert = true
@@ -103,6 +101,7 @@ struct ContentView: View {
         let expression = NSExpression(format: currentQuestion)
         let value = expression.expressionValue(with: nil, context: nil) as? Int
         
+        // Display an alert if incorrect
         if (answer ?? 0) != value {
             alertTitle = "Incorrect"
             alertMessage = "Try again!"
@@ -119,17 +118,32 @@ struct ContentView: View {
             alertMessage = "Press the start button at the top right to start the game!"
             showingAlert = true
         } else {
-            // Checks if this is the last question
-            if currentQuestion == questions.last {
-                showResults()
-            } else {
-                if isCorrect() {
-                    currentQuestionLocation += 1
-                    currentQuestion = questions[currentQuestionLocation]
+            // Checks if answer is correct
+            if isCorrect() {
+                currentQuestionLocation += 1
+                currentQuestion = questions[currentQuestionLocation]
+                
+                // Checks if this is the last question
+                if currentQuestion == questions.last {
+                    showResults()
+                    resetGame()
                 }
+            } else {
+                // If the answer is wrong, add a mistake and exit.
+                mistakes += 1
+                return
             }
         }
         answer = nil
+    }
+    
+    func resetGame() {
+        questions.removeAll()
+        mistakes = 0
+        answer = nil
+        currentQuestion = ""
+        currentQuestionLocation = 0
+        gameStarted = false
     }
 }
 
