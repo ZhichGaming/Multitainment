@@ -10,13 +10,10 @@ import SwiftUI
 struct ContentView: View {
     @State private var minimumMultiplication = 2
     @State private var maximumMultiplication = 12
-    
     @State private var questions = [String]()
     @State private var currentQuestion = ""
     @State private var currentQuestionLocation = 0
     @State private var answer: Int?
-    @State private var mistakes = 0
-    
     @State private var gameStarted = false
     
     @State private var showingAlert = false
@@ -25,34 +22,13 @@ struct ContentView: View {
     
     @State private var questionCountSelection = "5"
     @State private var questionCount = ["5", "10", "15", "20"]
-    @FocusState var isInputActive: Bool
     
     var body: some View {
         NavigationView {
             List {
                 SettingsView(minimumMultiplication: $minimumMultiplication, maximumMultiplication: $maximumMultiplication, questionCountSelection: $questionCountSelection, questionCount: $questionCount)
                 
-                // Questions
-                Section {
-                    Text(currentQuestion)
-                        .font(.headline)
-                        .onChange(of: currentQuestion) { _ in
-                            print("text: \(currentQuestion)")
-                        }
-                    TextField("Enter your answer", value: $answer, format: .number)
-                        .keyboardType(.numberPad)
-                        .focused($isInputActive)
-                        .toolbar {
-                            ToolbarItemGroup(placement: .keyboard) {
-                                Spacer()
-
-                                Button("Done") {
-                                    isInputActive = false
-                                    continueGame()
-                                }
-                            }
-                        }
-                }
+                QuestionsView(questionCountSelection: $questionCountSelection, maximumMultiplication: $maximumMultiplication, minimumMultiplication: $minimumMultiplication, showingAlert: $showingAlert, alertTitle: $alertTitle, alertMessage: $alertMessage, questions: $questions, currentQuestion: $currentQuestion, currentQuestionLocation: $currentQuestionLocation, answer: $answer, gameStarted: $gameStarted)
             }
             .navigationTitle("Multitainment")
             .listStyle(.grouped)
@@ -79,6 +55,84 @@ struct ContentView: View {
             questions.append(question)
             
             currentQuestion = questions[currentQuestionLocation]
+        }
+    }
+}
+
+struct SettingsView: View {
+    @Binding var minimumMultiplication: Int
+    @Binding var maximumMultiplication: Int
+    
+    @Binding var questionCountSelection: String
+    @Binding var questionCount: [String]
+    
+    var body: some View {
+        // Minimum and maximum multiplication tables
+        Section {
+            Stepper("From \(minimumMultiplication)", value: $minimumMultiplication, in: 1...20)
+                .onChange(of: minimumMultiplication) { _ in
+                    if minimumMultiplication >= maximumMultiplication { minimumMultiplication -= 1 }
+                }
+            Stepper("To \(maximumMultiplication)", value: $maximumMultiplication, in: 1...20)
+                .onChange(of: maximumMultiplication) { _ in
+                    if minimumMultiplication >= maximumMultiplication { maximumMultiplication += 1 }
+                }
+        } header: {
+            Text("Multiplication tables")
+        }
+        // Number of questions per round
+        Section {
+            Picker("Number of questions", selection: $questionCountSelection) {
+                ForEach(questionCount, id: \.self) {
+                    Text($0)
+                }
+            }
+            .pickerStyle(.segmented)
+        } header: {
+            Text("Number of questions")
+        }
+    }
+}
+
+struct QuestionsView: View {
+
+    @State private var mistakes = 0
+    
+    @FocusState var isInputActive: Bool
+    
+    @Binding var questionCountSelection: String
+    @Binding var maximumMultiplication: Int
+    @Binding var minimumMultiplication: Int
+    @Binding var showingAlert: Bool
+    @Binding var alertTitle: String
+    @Binding var alertMessage: String
+    @Binding var questions: [String]
+    @Binding var currentQuestion: String
+    @Binding var currentQuestionLocation: Int
+    @Binding var answer: Int?
+    @Binding var gameStarted: Bool
+
+
+    var body: some View {
+        Section {
+            Text(currentQuestion)
+                .font(.headline)
+                .onChange(of: currentQuestion) { _ in
+                    print("text: \(currentQuestion)")
+                }
+            TextField("Enter your answer", value: $answer, format: .number)
+                .keyboardType(.numberPad)
+                .focused($isInputActive)
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+
+                        Button("Done") {
+                            isInputActive = false
+                            continueGame()
+                        }
+                    }
+                }
         }
     }
     
@@ -139,41 +193,6 @@ struct ContentView: View {
         currentQuestion = ""
         currentQuestionLocation = 0
         gameStarted = false
-    }
-}
-
-struct SettingsView: View {
-    @Binding var minimumMultiplication: Int
-    @Binding var maximumMultiplication: Int
-    
-    @Binding var questionCountSelection: String
-    @Binding var questionCount: [String]
-    
-    var body: some View {
-        // Minimum and maximum multiplication tables
-        Section {
-            Stepper("From \(minimumMultiplication)", value: $minimumMultiplication, in: 1...20)
-                .onChange(of: minimumMultiplication) { _ in
-                    if minimumMultiplication >= maximumMultiplication { minimumMultiplication -= 1 }
-                }
-            Stepper("To \(maximumMultiplication)", value: $maximumMultiplication, in: 1...20)
-                .onChange(of: maximumMultiplication) { _ in
-                    if minimumMultiplication >= maximumMultiplication { maximumMultiplication += 1 }
-                }
-        } header: {
-            Text("Multiplication tables")
-        }
-        // Number of questions per round
-        Section {
-            Picker("Number of questions", selection: $questionCountSelection) {
-                ForEach(questionCount, id: \.self) {
-                    Text($0)
-                }
-            }
-            .pickerStyle(.segmented)
-        } header: {
-            Text("Number of questions")
-        }
     }
 }
 
